@@ -7,6 +7,24 @@ import cv2
 import mediapipe as mp
 
 
+def get_hand_size(hand_landmarks) -> int:
+    """
+    Returns the size of the hand in pixels.
+    Calculates as the distance from the wrist to the tip of the middle finger.
+    """
+    points = [0, 9, 10, 11, 12]
+    point_pairs = [(points[i], points[i + 1]) for i in range(len(points) - 1)]
+    return sum(
+        [
+            math.sqrt(
+                (hand_landmarks.landmark[pair[0]].x - hand_landmarks.landmark[pair[1]].x) ** 2 +
+                (hand_landmarks.landmark[pair[0]].y - hand_landmarks.landmark[pair[1]].y) ** 2
+            )
+            for pair in point_pairs
+        ]
+    )
+
+
 def get_finger_tip_coordinates(hand_landmarks):
     """Returns the coordinates of the thumb and index fingertips"""
     thumb_tip = [hand_landmarks.landmark[4].x, hand_landmarks.landmark[4].y]
@@ -59,7 +77,10 @@ if __name__ == "__main__":
                 distance = get_finger_distance(get_finger_tip_coordinates(hand_landmarks))
 
                 # Check if the distance is below a threshold to consider the fingers touching
-                if distance < 0.03:
+                # The threshold is calculated as a percentage of the hand size
+                hand_size = get_hand_size(hand_landmarks)
+                touch_threshold = hand_size * 0.0625
+                if distance < touch_threshold:
                     print(f"{time.time()} Index and thumb fingers are touching")
 
         # Display the frame
